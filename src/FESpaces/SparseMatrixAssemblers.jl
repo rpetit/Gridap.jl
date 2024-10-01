@@ -33,7 +33,6 @@ end
 
 function assemble_vector_add!(b,a::SparseMatrixAssembler,vecdata)
   numeric_loop_vector!(b,a,vecdata)
-  create_from_nz(b)
 end
 
 function assemble_vector(a::SparseMatrixAssembler,vecdata)
@@ -261,20 +260,18 @@ end
 
 function numeric_loop_vector!(b,a::SparseMatrixAssembler,vecdata)
   strategy = get_assembly_strategy(a)
-  for (cellvec, _cellids) in zip(vecdata...)
-    cellids = map_cell_rows(strategy,_cellids)
-    if length(cellvec) > 0
-      rows_cache = array_cache(cellids)
-      vals_cache = array_cache(cellvec)
-      vals1 = getindex!(vals_cache,cellvec,1)
-      rows1 = getindex!(rows_cache,cellids,1)
-      add! = AddEntriesMap(+)
-      add_cache = return_cache(add!,b,vals1,rows1)
-      caches = add_cache, vals_cache, rows_cache
-      _numeric_loop_vector!(b,caches,cellvec,cellids)
-    end
+  cellvec, _cellids = vecdata
+  cellids = map_cell_rows(strategy,_cellids)
+  if length(cellvec) > 0
+    rows_cache = array_cache(cellids)
+    vals_cache = array_cache(cellvec)
+    vals1 = getindex!(vals_cache,cellvec,1)
+    rows1 = getindex!(rows_cache,cellids,1)
+    add! = AddEntriesMap(+)
+    add_cache = return_cache(add!,b,vals1,rows1)
+    caches = add_cache, vals_cache, rows_cache
+    _numeric_loop_vector!(b,caches,cellvec,cellids)
   end
-  b
 end
 
 @noinline function _numeric_loop_vector!(vec,caches,cell_vals,cell_rows)
